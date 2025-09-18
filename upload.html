@@ -59,7 +59,46 @@
                 </div>
             </section>
 
-            <!-- Caption handling is now done inline during upload -->
+            <!-- Special Message Section -->
+            <section class="special-message-section">
+                <div class="special-message-card">
+                    <h2>💝 Upload Special Message Video</h2>
+                    <p>Upload a heartfelt video message that will appear in the special message section</p>
+
+                    <div class="special-message-upload">
+                        <div style="text-align: center; padding: 30px;">
+                            <div style="font-size: 3rem; margin-bottom: 15px;">🎬</div>
+                            <h3 style="margin-bottom: 10px; color: var(--text-dark);">Special Message for Nonie</h3>
+                            <p style="color: var(--text-light); margin-bottom: 20px; font-style: italic;">This will replace any existing special message</p>
+
+                            <button id="special-message-btn" style="background: linear-gradient(135deg, var(--rose-gold), #9a5a68); color: white; padding: 12px 25px; border: none; border-radius: 20px; font-size: 1rem; cursor: pointer; transition: var(--transition); box-shadow: var(--shadow-soft);">
+                                🎥 Upload Special Message
+                            </button>
+
+                            <input type="file" id="special-message-input" accept="video/*,.mp4,.mov,.avi,.wmv,.webm" style="display: none;">
+
+                            <p style="font-size: 0.85rem; color: var(--text-light); margin-top: 10px;">
+                                Video only • Max 20MB • MP4, MOV, AVI, WebM supported
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="special-message-status" id="special-message-status" style="display: none; text-align: center; padding: 15px; margin-top: 15px; border-radius: 10px; background: var(--blush-pink);">
+                        <p id="special-message-text">Processing...</p>
+                        <div class="progress-bar" style="width: 100%; height: 6px; background: white; border-radius: 3px; margin: 8px 0; overflow: hidden;">
+                            <div id="special-message-progress" style="height: 100%; background: var(--rose-gold); width: 0%; transition: width 0.3s;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Current Special Message Display -->
+                    <div class="current-special-message" id="current-special-message" style="margin-top: 20px;">
+                        <h3 style="color: var(--text-dark); margin-bottom: 15px;">Current Special Message:</h3>
+                        <div id="special-message-preview" style="text-align: center; padding: 20px; background: rgba(247, 217, 217, 0.3); border-radius: 10px;">
+                            <p style="color: var(--text-light);">No special message uploaded yet</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <!-- Gallery Management -->
             <section class="gallery-section">

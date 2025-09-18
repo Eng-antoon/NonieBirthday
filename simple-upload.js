@@ -19,7 +19,7 @@ class SimpleUploadManager {
         const refreshBtn = document.getElementById('refresh-btn');
         const previewBtn = document.getElementById('preview-btn');
 
-        // File selection
+        // Regular gallery file selection
         selectFilesBtn.addEventListener('click', () => {
             fileInput.click();
         });
@@ -31,9 +31,29 @@ class SimpleUploadManager {
             }
         });
 
+        // Special message upload
+        const specialMessageBtn = document.getElementById('special-message-btn');
+        const specialMessageInput = document.getElementById('special-message-input');
+
+        if (specialMessageBtn && specialMessageInput) {
+            specialMessageBtn.addEventListener('click', () => {
+                specialMessageInput.click();
+            });
+
+            specialMessageInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    this.handleSpecialMessageUpload(file);
+                }
+            });
+        }
+
         // Button events
         if (refreshBtn) refreshBtn.addEventListener('click', () => this.loadCurrentGallery());
         if (previewBtn) previewBtn.addEventListener('click', () => window.open('index.html', '_blank'));
+
+        // Load current special message
+        this.loadCurrentSpecialMessage();
     }
 
     handleFileSelection(files) {
@@ -397,6 +417,275 @@ class SimpleUploadManager {
         } catch (error) {
             console.error('Error deleting item:', error);
             this.showStatus('❌ Error deleting item: ' + error.message, 'error');
+        }
+    }
+
+    async handleSpecialMessageUpload(file) {
+        console.log('Special message file selected:', file.name);
+
+        try {
+            // Check file size (20MB limit for special message)
+            if (file.size > 20 * 1024 * 1024) {
+                throw new Error('File is too large. Maximum size is 20MB for special messages.');
+            }
+
+            // Show status
+            this.showSpecialMessageStatus('Uploading special message...', 'uploading');
+
+            // Upload to Cloudinary
+            const result = await this.uploadSpecialMessageToCloudinary(file);
+            console.log('Special message upload successful:', result);
+
+            // Get caption from user
+            const caption = await this.getSpecialMessageCaptionFromUser(file.name, result.secure_url);
+
+            // Save to Firebase as special message
+            await this.saveSpecialMessageToFirebase(result, caption);
+
+            this.showSpecialMessageStatus('✅ Special message uploaded successfully! 💕', 'success');
+            setTimeout(() => {
+                this.hideSpecialMessageStatus();
+                this.loadCurrentSpecialMessage();
+            }, 3000);
+
+        } catch (error) {
+            console.error('Error uploading special message:', error);
+            this.showSpecialMessageStatus(`❌ Error uploading special message: ${error.message}`, 'error');
+            setTimeout(() => this.hideSpecialMessageStatus(), 5000);
+        }
+    }
+
+    async uploadSpecialMessageToCloudinary(file) {
+        return new Promise((resolve, reject) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', this.uploadPreset);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `https://api.cloudinary.com/v1_1/${this.cloudName}/upload`);
+
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const result = JSON.parse(xhr.responseText);
+                    resolve(result);
+                } else {
+                    let errorMessage = 'Upload failed';
+                    try {
+                        const errorData = JSON.parse(xhr.responseText);
+                        errorMessage = errorData.error?.message || `HTTP ${xhr.status}`;
+                    } catch (e) {
+                        errorMessage = `HTTP ${xhr.status}`;
+                    }
+                    reject(new Error(errorMessage));
+                }
+            };
+
+            xhr.onerror = () => {
+                reject(new Error('Network error during upload'));
+            };
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percent = (e.loaded / e.total) * 100;
+                    this.updateSpecialMessageProgress(percent);
+                }
+            };
+
+            xhr.send(formData);
+        });
+    }
+
+    async getSpecialMessageCaptionFromUser(fileName, fileUrl) {
+        return new Promise((resolve) => {
+            // Create modal for caption input
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white;
+                padding: 30px;
+                border-radius: 20px;
+                max-width: 500px;
+                width: 90%;
+                text-align: center;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            `;
+
+            modalContent.innerHTML = `
+                <h3 style="color: #333; margin-bottom: 15px;">💝 Special Message Caption</h3>
+                <video style="width: 100%; max-height: 200px; border-radius: 10px; margin-bottom: 20px;" controls>
+                    <source src="${fileUrl}" type="video/mp4">
+                </video>
+                <input
+                    type="text"
+                    id="special-caption-input"
+                    placeholder="A heartfelt message for Nonie..."
+                    value="A special message filled with love for Nonie 💕"
+                    style="width: 100%; padding: 12px; border: 2px solid #F7D9D9; border-radius: 8px; font-size: 1rem; margin-bottom: 20px;"
+                >
+                <div>
+                    <button id="save-special-caption" style="background: #B76E79; color: white; padding: 12px 24px; border: none; border-radius: 25px; cursor: pointer; margin: 0 10px; font-size: 1rem;">
+                        💝 Save Special Message
+                    </button>
+                    <button id="skip-special-caption" style="background: #ccc; color: #333; padding: 12px 24px; border: none; border-radius: 25px; cursor: pointer; margin: 0 10px; font-size: 1rem;">
+                        Skip
+                    </button>
+                </div>
+            `;
+
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+
+            const captionInput = document.getElementById('special-caption-input');
+            const saveBtn = document.getElementById('save-special-caption');
+            const skipBtn = document.getElementById('skip-special-caption');
+
+            // Focus on input
+            captionInput.focus();
+            captionInput.select();
+
+            const cleanup = () => {
+                document.body.removeChild(modal);
+            };
+
+            saveBtn.addEventListener('click', () => {
+                const caption = captionInput.value.trim() || 'A special message filled with love for Nonie 💕';
+                cleanup();
+                resolve(caption);
+            });
+
+            skipBtn.addEventListener('click', () => {
+                cleanup();
+                resolve('A special message filled with love for Nonie 💕');
+            });
+
+            // Allow Enter key to save
+            captionInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveBtn.click();
+                }
+            });
+        });
+    }
+
+    async saveSpecialMessageToFirebase(cloudinaryResult, caption) {
+        try {
+            if (!window.galleryData) {
+                throw new Error('Firebase not ready');
+            }
+
+            await window.galleryData.setSpecialMessage(
+                cloudinaryResult.public_id,
+                caption,
+                cloudinaryResult.secure_url
+            );
+
+            console.log('✅ Special message saved to Firebase:', cloudinaryResult.public_id);
+
+        } catch (error) {
+            console.error('Error saving special message to Firebase:', error);
+            throw error;
+        }
+    }
+
+    showSpecialMessageStatus(message, type) {
+        const statusDiv = document.getElementById('special-message-status');
+        const statusText = document.getElementById('special-message-text');
+
+        statusText.textContent = message;
+        statusDiv.style.display = 'block';
+
+        // Update colors based on type
+        if (type === 'success') {
+            statusDiv.style.background = '#d4edda';
+            statusDiv.style.color = '#155724';
+        } else if (type === 'error') {
+            statusDiv.style.background = '#f8d7da';
+            statusDiv.style.color = '#721c24';
+        } else if (type === 'uploading') {
+            statusDiv.style.background = '#fff3cd';
+            statusDiv.style.color = '#856404';
+        } else {
+            statusDiv.style.background = '#d1ecf1';
+            statusDiv.style.color = '#0c5460';
+        }
+    }
+
+    hideSpecialMessageStatus() {
+        document.getElementById('special-message-status').style.display = 'none';
+        this.updateSpecialMessageProgress(0);
+    }
+
+    updateSpecialMessageProgress(percent) {
+        const progressFill = document.getElementById('special-message-progress');
+        progressFill.style.width = percent + '%';
+    }
+
+    async loadCurrentSpecialMessage() {
+        const previewDiv = document.getElementById('special-message-preview');
+        if (!previewDiv) return;
+
+        try {
+            if (!window.galleryData) {
+                throw new Error('Gallery data not available');
+            }
+
+            const specialMessage = await window.galleryData.getSpecialMessage();
+
+            if (specialMessage) {
+                previewDiv.innerHTML = `
+                    <div style="text-align: center;">
+                        <video style="width: 100%; max-height: 300px; border-radius: 10px; margin-bottom: 15px;" controls>
+                            <source src="${specialMessage.cloudinaryUrl}" type="video/mp4">
+                        </video>
+                        <p style="font-style: italic; color: var(--text-dark); margin-bottom: 10px;">"${specialMessage.caption}"</p>
+                        <p style="font-size: 0.9rem; color: var(--text-light);">
+                            Uploaded: ${specialMessage.createdAt ? new Date(specialMessage.createdAt).toLocaleDateString() : 'Unknown'}
+                        </p>
+                        <button onclick="simpleUploadManager.deleteSpecialMessage()" style="background: #dc3545; color: white; padding: 8px 16px; border: none; border-radius: 15px; cursor: pointer; margin-top: 10px;">
+                            🗑️ Delete Special Message
+                        </button>
+                    </div>
+                `;
+            } else {
+                previewDiv.innerHTML = '<p style="color: var(--text-light);">No special message uploaded yet</p>';
+            }
+
+        } catch (error) {
+            console.error('Error loading special message:', error);
+            previewDiv.innerHTML = '<p style="color: var(--text-light);">Error loading special message</p>';
+        }
+    }
+
+    async deleteSpecialMessage() {
+        if (!confirm('Are you sure you want to delete the special message?')) {
+            return;
+        }
+
+        try {
+            if (window.galleryData) {
+                await window.galleryData.removeSpecialMessage();
+                this.showSpecialMessageStatus('✅ Special message deleted successfully!', 'success');
+                setTimeout(() => {
+                    this.hideSpecialMessageStatus();
+                    this.loadCurrentSpecialMessage();
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('Error deleting special message:', error);
+            this.showSpecialMessageStatus('❌ Error deleting special message: ' + error.message, 'error');
         }
     }
 }

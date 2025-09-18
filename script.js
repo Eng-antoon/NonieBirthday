@@ -15,6 +15,7 @@ class BirthdayWebsite {
             data: []
         };
         this.allGalleryData = [];
+        this.keyboardListenerSetup = false;
 
         this.init();
     }
@@ -25,6 +26,7 @@ class BirthdayWebsite {
         this.initGallery();
         this.initScrollAnimations();
         this.startAutoplay();
+        await this.loadSpecialMessage();
     }
 
     async loadGalleryData() {
@@ -51,6 +53,12 @@ class BirthdayWebsite {
                     this.allGalleryData = items;
                     this.separateMediaTypes();
                     this.refreshAllGalleries();
+                });
+
+                // Set up real-time listener for special message updates
+                window.galleryData.listenToSpecialMessage((specialMessage) => {
+                    console.log('🔄 Special message update received');
+                    this.renderSpecialMessage(specialMessage);
                 });
 
             } else {
@@ -132,6 +140,13 @@ class BirthdayWebsite {
     refreshAllGalleries() {
         this.refreshImageGallery();
         this.refreshVideoGallery();
+
+        // Re-setup controls after refresh
+        setTimeout(() => {
+            this.setupImageGalleryControls();
+            this.setupVideoGalleryControls();
+            this.setupHoverEffects();
+        }, 100);
     }
 
     refreshImageGallery() {
@@ -266,9 +281,13 @@ class BirthdayWebsite {
     initGallery() {
         this.createImageGalleryHTML();
         this.createVideoGalleryHTML();
-        this.setupImageGalleryControls();
-        this.setupVideoGalleryControls();
-        this.setupHoverEffects();
+
+        // Delay setup to ensure DOM elements are fully rendered
+        setTimeout(() => {
+            this.setupImageGalleryControls();
+            this.setupVideoGalleryControls();
+            this.setupHoverEffects();
+        }, 100);
     }
 
     createImageGalleryHTML() {
@@ -289,14 +308,23 @@ class BirthdayWebsite {
             img.alt = item.caption;
             img.loading = 'lazy';
 
-            const caption = document.createElement('div');
-            caption.className = 'slide-caption';
-            caption.innerHTML = `<p>${item.caption}</p>`;
-
             slide.appendChild(img);
-            slide.appendChild(caption);
             container.appendChild(slide);
         });
+
+        // Create caption container below the slider
+        const captionContainer = document.createElement('div');
+        captionContainer.className = 'slide-caption-container';
+        captionContainer.id = 'image-caption-container';
+
+        this.imageSlider.data.forEach((item, index) => {
+            const caption = document.createElement('div');
+            caption.className = `slide-caption ${index === 0 ? 'active' : ''}`;
+            caption.innerHTML = `<p>"${item.caption || 'Beautiful moment with Nonie 💕'}"</p>`;
+            captionContainer.appendChild(caption);
+        });
+
+        container.appendChild(captionContainer);
 
         // Create navigation arrows for images
         this.createNavigationControls(container, 'image');
@@ -326,14 +354,23 @@ class BirthdayWebsite {
             video.setAttribute('playsinline', '');
             video.setAttribute('preload', 'metadata');
 
-            const caption = document.createElement('div');
-            caption.className = 'slide-caption';
-            caption.innerHTML = `<p>${item.caption}</p>`;
-
             slide.appendChild(video);
-            slide.appendChild(caption);
             container.appendChild(slide);
         });
+
+        // Create caption container below the slider
+        const captionContainer = document.createElement('div');
+        captionContainer.className = 'slide-caption-container';
+        captionContainer.id = 'video-caption-container';
+
+        this.videoSlider.data.forEach((item, index) => {
+            const caption = document.createElement('div');
+            caption.className = `slide-caption ${index === 0 ? 'active' : ''}`;
+            caption.innerHTML = `<p>"${item.caption || 'Beautiful moment with Nonie 💕'}"</p>`;
+            captionContainer.appendChild(caption);
+        });
+
+        container.appendChild(captionContainer);
 
         // Create navigation arrows for videos
         this.createNavigationControls(container, 'video');
@@ -378,15 +415,36 @@ class BirthdayWebsite {
         const prevBtn = document.querySelector('.nav-arrow-image.prev');
         const nextBtn = document.querySelector('.nav-arrow-image.next');
 
+        console.log('Setting up image gallery controls:', { prevBtn: !!prevBtn, nextBtn: !!nextBtn });
+
         if (prevBtn && nextBtn) {
-            prevBtn.addEventListener('click', () => this.previousImageSlide());
-            nextBtn.addEventListener('click', () => this.nextImageSlide());
+            // Remove existing listeners to prevent duplicates
+            prevBtn.removeEventListener('click', this.previousImageSlide);
+            nextBtn.removeEventListener('click', this.nextImageSlide);
+
+            // Add new listeners
+            prevBtn.addEventListener('click', () => {
+                console.log('Previous image button clicked');
+                this.previousImageSlide();
+            });
+            nextBtn.addEventListener('click', () => {
+                console.log('Next image button clicked');
+                this.nextImageSlide();
+            });
+
+            console.log('✅ Image navigation buttons set up successfully');
+        } else {
+            console.log('❌ Image navigation buttons not found');
         }
 
         // Image dot navigation
         const imageDots = document.querySelectorAll('.dot-image');
+        console.log('Setting up image dots:', imageDots.length);
         imageDots.forEach((dot, index) => {
-            dot.addEventListener('click', () => this.goToImageSlide(index));
+            dot.addEventListener('click', () => {
+                console.log('Image dot clicked:', index);
+                this.goToImageSlide(index);
+            });
         });
     }
 
@@ -394,28 +452,53 @@ class BirthdayWebsite {
         const prevBtn = document.querySelector('.nav-arrow-video.prev');
         const nextBtn = document.querySelector('.nav-arrow-video.next');
 
+        console.log('Setting up video gallery controls:', { prevBtn: !!prevBtn, nextBtn: !!nextBtn });
+
         if (prevBtn && nextBtn) {
-            prevBtn.addEventListener('click', () => this.previousVideoSlide());
-            nextBtn.addEventListener('click', () => this.nextVideoSlide());
+            // Remove existing listeners to prevent duplicates
+            prevBtn.removeEventListener('click', this.previousVideoSlide);
+            nextBtn.removeEventListener('click', this.nextVideoSlide);
+
+            // Add new listeners
+            prevBtn.addEventListener('click', () => {
+                console.log('Previous video button clicked');
+                this.previousVideoSlide();
+            });
+            nextBtn.addEventListener('click', () => {
+                console.log('Next video button clicked');
+                this.nextVideoSlide();
+            });
+
+            console.log('✅ Video navigation buttons set up successfully');
+        } else {
+            console.log('❌ Video navigation buttons not found');
         }
 
         // Video dot navigation
         const videoDots = document.querySelectorAll('.dot-video');
+        console.log('Setting up video dots:', videoDots.length);
         videoDots.forEach((dot, index) => {
-            dot.addEventListener('click', () => this.goToVideoSlide(index));
+            dot.addEventListener('click', () => {
+                console.log('Video dot clicked:', index);
+                this.goToVideoSlide(index);
+            });
         });
 
-        // Keyboard navigation for both sliders
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') {
-                if (this.imageSlider.data.length > 0) this.previousImageSlide();
-                if (this.videoSlider.data.length > 0) this.previousVideoSlide();
-            }
-            if (e.key === 'ArrowRight') {
-                if (this.imageSlider.data.length > 0) this.nextImageSlide();
-                if (this.videoSlider.data.length > 0) this.nextVideoSlide();
-            }
-        });
+        // Keyboard navigation for both sliders (only set up once)
+        if (!this.keyboardListenerSetup) {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') {
+                    if (this.imageSlider.data.length > 0) this.previousImageSlide();
+                    if (this.videoSlider.data.length > 0) this.previousVideoSlide();
+                }
+                if (e.key === 'ArrowRight') {
+                    if (this.imageSlider.data.length > 0) this.nextImageSlide();
+                    if (this.videoSlider.data.length > 0) this.nextVideoSlide();
+                }
+            });
+            this.keyboardListenerSetup = true;
+            console.log('✅ Keyboard navigation set up');
+        }
 
         // Touch/swipe support for both galleries
         this.setupTouchSupport();
@@ -488,26 +571,33 @@ class BirthdayWebsite {
     goToImageSlide(index) {
         const slides = document.querySelectorAll('#image-gallery-container .slide');
         const dots = document.querySelectorAll('.dot-image');
+        const captions = document.querySelectorAll('#image-caption-container .slide-caption');
 
         if (slides.length === 0) return;
 
-        // Remove active class from current slide and dot
+        // Remove active class from current slide, dot, and caption
         if (slides[this.imageSlider.currentSlide]) {
             slides[this.imageSlider.currentSlide].classList.remove('active');
         }
         if (dots[this.imageSlider.currentSlide]) {
             dots[this.imageSlider.currentSlide].classList.remove('active');
         }
+        if (captions[this.imageSlider.currentSlide]) {
+            captions[this.imageSlider.currentSlide].classList.remove('active');
+        }
 
         // Update current slide index
         this.imageSlider.currentSlide = index;
 
-        // Add active class to new slide and dot
+        // Add active class to new slide, dot, and caption
         if (slides[this.imageSlider.currentSlide]) {
             slides[this.imageSlider.currentSlide].classList.add('active');
         }
         if (dots[this.imageSlider.currentSlide]) {
             dots[this.imageSlider.currentSlide].classList.add('active');
+        }
+        if (captions[this.imageSlider.currentSlide]) {
+            captions[this.imageSlider.currentSlide].classList.add('active');
         }
 
         // Restart Ken Burns animation
@@ -536,26 +626,33 @@ class BirthdayWebsite {
     goToVideoSlide(index) {
         const slides = document.querySelectorAll('#video-gallery-container .slide');
         const dots = document.querySelectorAll('.dot-video');
+        const captions = document.querySelectorAll('#video-caption-container .slide-caption');
 
         if (slides.length === 0) return;
 
-        // Remove active class from current slide and dot
+        // Remove active class from current slide, dot, and caption
         if (slides[this.videoSlider.currentSlide]) {
             slides[this.videoSlider.currentSlide].classList.remove('active');
         }
         if (dots[this.videoSlider.currentSlide]) {
             dots[this.videoSlider.currentSlide].classList.remove('active');
         }
+        if (captions[this.videoSlider.currentSlide]) {
+            captions[this.videoSlider.currentSlide].classList.remove('active');
+        }
 
         // Update current slide index
         this.videoSlider.currentSlide = index;
 
-        // Add active class to new slide and dot
+        // Add active class to new slide, dot, and caption
         if (slides[this.videoSlider.currentSlide]) {
             slides[this.videoSlider.currentSlide].classList.add('active');
         }
         if (dots[this.videoSlider.currentSlide]) {
             dots[this.videoSlider.currentSlide].classList.add('active');
+        }
+        if (captions[this.videoSlider.currentSlide]) {
+            captions[this.videoSlider.currentSlide].classList.add('active');
         }
     }
 
@@ -597,6 +694,78 @@ class BirthdayWebsite {
         }, 8000); // Slightly longer for videos
     }
 
+    // Special Message Methods
+    async loadSpecialMessage() {
+        try {
+            if (!window.galleryData) {
+                console.log('Gallery data not ready for special message');
+                return;
+            }
+
+            const specialMessage = await window.galleryData.getSpecialMessage();
+            this.renderSpecialMessage(specialMessage);
+
+        } catch (error) {
+            console.error('❌ Error loading special message:', error);
+            this.renderSpecialMessage(null);
+        }
+    }
+
+    renderSpecialMessage(specialMessage) {
+        const container = document.getElementById('special-message-container');
+        if (!container) return;
+
+        if (specialMessage && specialMessage.cloudinaryUrl) {
+            console.log('✅ Rendering special message');
+            container.innerHTML = `
+                <div class="special-message-video">
+                    <video controls autoplay muted>
+                        <source src="${specialMessage.cloudinaryUrl}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                <div class="slide-caption-container">
+                    <div class="slide-caption active">
+                        <p>"${specialMessage.caption || 'A special message filled with love for Nonie 💕'}"</p>
+                    </div>
+                </div>
+            `;
+
+            // Add intersection observer for animations
+            const videoElement = container.querySelector('.special-message-video');
+            if (videoElement) {
+                this.observeElement(videoElement);
+            }
+
+        } else {
+            console.log('No special message to display');
+            container.innerHTML = `
+                <div class="special-message-empty">
+                    <h3>💝 No Special Message Yet</h3>
+                    <p>A heartfelt video message will appear here once uploaded!</p>
+                    <p><a href="upload.html">Upload a Special Message →</a></p>
+                </div>
+            `;
+        }
+    }
+
+    observeElement(element) {
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        observer.observe(element);
+    }
+
     // Scroll Animations
     initScrollAnimations() {
         const observerOptions = {
@@ -613,7 +782,7 @@ class BirthdayWebsite {
         }, observerOptions);
 
         // Observe elements that should animate on scroll
-        const animatedElements = document.querySelectorAll('.section-title, .video-container');
+        const animatedElements = document.querySelectorAll('.section-title, .special-message-display');
         animatedElements.forEach(el => observer.observe(el));
     }
 }

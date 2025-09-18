@@ -1,5 +1,6 @@
 // Firebase Firestore Gallery Data Management
 const COLLECTION_NAME = 'nonie-gallery';
+const SPECIAL_MESSAGE_DOC = 'special-message';
 
 // Function to get gallery items from Firestore
 async function getGalleryItems() {
@@ -149,6 +150,101 @@ function listenToGalleryChanges(callback) {
     }
 }
 
+// Special Message Functions
+
+// Function to set/update special message
+async function setSpecialMessage(imageId, caption, cloudinaryUrl) {
+    try {
+        if (!window.db) {
+            throw new Error('Firebase not initialized');
+        }
+
+        const specialMessageData = {
+            imageId: imageId,
+            caption: caption,
+            cloudinaryUrl: cloudinaryUrl,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            createdAt: new Date().toISOString()
+        };
+
+        await window.db.collection(COLLECTION_NAME).doc(SPECIAL_MESSAGE_DOC).set(specialMessageData);
+        console.log('✅ Special message saved to Firestore');
+        return true;
+
+    } catch (error) {
+        console.error('❌ Error saving special message:', error);
+        throw error;
+    }
+}
+
+// Function to get special message
+async function getSpecialMessage() {
+    try {
+        if (!window.db) {
+            console.log('Firebase not initialized yet, waiting...');
+            return null;
+        }
+
+        const doc = await window.db.collection(COLLECTION_NAME).doc(SPECIAL_MESSAGE_DOC).get();
+
+        if (doc.exists) {
+            console.log('✅ Special message loaded from Firestore');
+            return doc.data();
+        } else {
+            console.log('No special message found');
+            return null;
+        }
+
+    } catch (error) {
+        console.error('❌ Error getting special message:', error);
+        return null;
+    }
+}
+
+// Function to remove special message
+async function removeSpecialMessage() {
+    try {
+        if (!window.db) {
+            throw new Error('Firebase not initialized');
+        }
+
+        await window.db.collection(COLLECTION_NAME).doc(SPECIAL_MESSAGE_DOC).delete();
+        console.log('✅ Special message deleted from Firestore');
+        return true;
+
+    } catch (error) {
+        console.error('❌ Error deleting special message:', error);
+        throw error;
+    }
+}
+
+// Function to listen for special message changes
+function listenToSpecialMessageChanges(callback) {
+    try {
+        if (!window.db) {
+            console.log('Firebase not initialized for special message listening');
+            return null;
+        }
+
+        return window.db.collection(COLLECTION_NAME).doc(SPECIAL_MESSAGE_DOC)
+            .onSnapshot(doc => {
+                if (doc.exists) {
+                    console.log('🔄 Special message updated');
+                    callback(doc.data());
+                } else {
+                    console.log('🔄 Special message removed');
+                    callback(null);
+                }
+            }, error => {
+                console.error('❌ Special message listener error:', error);
+            });
+
+    } catch (error) {
+        console.error('❌ Error setting up special message listener:', error);
+        return null;
+    }
+}
+
 // Wait for Firebase to be ready, then make functions available globally
 function initializeGalleryData() {
     const maxWaitTime = 10000; // 10 seconds
@@ -164,7 +260,12 @@ function initializeGalleryData() {
                 addItem: addGalleryItem,
                 updateCaption: updateGalleryItemCaption,
                 removeItem: removeGalleryItem,
-                listen: listenToGalleryChanges
+                listen: listenToGalleryChanges,
+                // Special message functions
+                setSpecialMessage: setSpecialMessage,
+                getSpecialMessage: getSpecialMessage,
+                removeSpecialMessage: removeSpecialMessage,
+                listenToSpecialMessage: listenToSpecialMessageChanges
             };
 
             return true;
