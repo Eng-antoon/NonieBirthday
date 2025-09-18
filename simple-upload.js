@@ -238,7 +238,14 @@ class SimpleUploadManager {
                 throw new Error('Firebase not ready');
             }
 
-            const resourceType = cloudinaryResult.resource_type || 'image';
+            // Determine resource type more intelligently
+            let resourceType = cloudinaryResult.resource_type || 'image';
+
+            // If Cloudinary didn't set resource_type properly, check file extension
+            if (!resourceType || resourceType === 'auto') {
+                resourceType = this.determineResourceType(cloudinaryResult.public_id, cloudinaryResult.format);
+            }
+
             await window.galleryData.addItem(
                 cloudinaryResult.public_id,
                 caption,
@@ -246,12 +253,34 @@ class SimpleUploadManager {
                 cloudinaryResult.secure_url
             );
 
-            console.log('✅ Saved to Firebase:', cloudinaryResult.public_id);
+            console.log('✅ Saved to Firebase:', cloudinaryResult.public_id, 'as', resourceType);
 
         } catch (error) {
             console.error('Error saving to Firebase:', error);
             throw error;
         }
+    }
+
+    determineResourceType(publicId, format) {
+        const videoExtensions = ['mp4', 'mov', 'avi', 'wmv', 'flv', 'webm', 'mkv', '3gp', 'm4v'];
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+
+        // Check format first
+        if (format && videoExtensions.includes(format.toLowerCase())) {
+            return 'video';
+        }
+        if (format && imageExtensions.includes(format.toLowerCase())) {
+            return 'image';
+        }
+
+        // Check file extension from public_id
+        const extension = publicId.split('.').pop()?.toLowerCase();
+        if (extension && videoExtensions.includes(extension)) {
+            return 'video';
+        }
+
+        // Default to image
+        return 'image';
     }
 
     showStatus(message, type) {

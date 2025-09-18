@@ -2,10 +2,19 @@ const CLOUD_NAME = 'dsgrl4zf8';
 
 class BirthdayWebsite {
     constructor() {
-        this.currentSlide = 0;
-        this.autoplayTimer = null;
-        this.isAutoplayPaused = false;
-        this.galleryData = [];
+        this.imageSlider = {
+            currentSlide: 0,
+            autoplayTimer: null,
+            isAutoplayPaused: false,
+            data: []
+        };
+        this.videoSlider = {
+            currentSlide: 0,
+            autoplayTimer: null,
+            isAutoplayPaused: false,
+            data: []
+        };
+        this.allGalleryData = [];
 
         this.init();
     }
@@ -30,14 +39,18 @@ class BirthdayWebsite {
             }
 
             if (window.galleryData) {
-                this.galleryData = await window.galleryData.getItems();
-                console.log('✅ Loaded', this.galleryData.length, 'items from Firestore');
+                this.allGalleryData = await window.galleryData.getItems();
+                console.log('✅ Loaded', this.allGalleryData.length, 'items from Firestore');
+
+                // Separate images and videos
+                this.separateMediaTypes();
 
                 // Set up real-time listener for updates
                 window.galleryData.listen((items) => {
                     console.log('🔄 Real-time update received:', items.length, 'items');
-                    this.galleryData = items;
-                    this.refreshGallery();
+                    this.allGalleryData = items;
+                    this.separateMediaTypes();
+                    this.refreshAllGalleries();
                 });
 
             } else {
@@ -46,40 +59,115 @@ class BirthdayWebsite {
 
         } catch (error) {
             console.error('❌ Error loading gallery data:', error);
-            this.galleryData = []; // Empty gallery instead of placeholders
-            this.showEmptyGalleryMessage();
+            this.allGalleryData = [];
+            this.separateMediaTypes();
+            this.showEmptyGalleryMessages();
         }
     }
 
-    showEmptyGalleryMessage() {
-        const container = document.getElementById('gallery-container');
+    separateMediaTypes() {
+        // Separate images and videos based on type and file extension
+        this.imageSlider.data = this.allGalleryData.filter(item => this.isImage(item));
+        this.videoSlider.data = this.allGalleryData.filter(item => this.isVideo(item));
+
+        console.log('📸 Images:', this.imageSlider.data.length);
+        console.log('🎬 Videos:', this.videoSlider.data.length);
+    }
+
+    isImage(item) {
+        if (item.type === 'image') return true;
+        if (item.type === 'video') return false;
+
+        // Check by file extension if type is not clear
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+        const publicId = item.imageId || '';
+        const extension = publicId.split('.').pop()?.toLowerCase();
+
+        return imageExtensions.includes(extension);
+    }
+
+    isVideo(item) {
+        if (item.type === 'video') return true;
+        if (item.type === 'image') return false;
+
+        // Check by file extension if type is not clear
+        const videoExtensions = ['mp4', 'mov', 'avi', 'wmv', 'flv', 'webm', 'mkv', '3gp', 'm4v'];
+        const publicId = item.imageId || '';
+        const extension = publicId.split('.').pop()?.toLowerCase();
+
+        return videoExtensions.includes(extension);
+    }
+
+    showEmptyGalleryMessages() {
+        this.showEmptyImageGallery();
+        this.showEmptyVideoGallery();
+    }
+
+    showEmptyImageGallery() {
+        const container = document.getElementById('image-gallery-container');
         container.innerHTML = `
             <div class="empty-gallery">
                 <div style="text-align: center; padding: 60px 20px; color: #666;">
-                    <div style="font-size: 4rem; margin-bottom: 20px;">📸</div>
-                    <h3 style="font-family: var(--font-heading); margin-bottom: 10px;">No memories uploaded yet!</h3>
-                    <p>Upload some beautiful photos and videos for Nonie using the <a href="upload.html" style="color: var(--rose-gold);">upload page</a>.</p>
+                    <div style="font-size: 3rem; margin-bottom: 20px;">📸</div>
+                    <h3 style="font-family: var(--font-heading); margin-bottom: 10px;">No photos uploaded yet!</h3>
+                    <p>Upload some beautiful photos for Nonie using the <a href="upload.html" style="color: var(--rose-gold);">upload page</a>.</p>
                 </div>
             </div>
         `;
     }
 
-    refreshGallery() {
+    showEmptyVideoGallery() {
+        const container = document.getElementById('video-gallery-container');
+        container.innerHTML = `
+            <div class="empty-gallery">
+                <div style="text-align: center; padding: 60px 20px; color: #666;">
+                    <div style="font-size: 3rem; margin-bottom: 20px;">🎬</div>
+                    <h3 style="font-family: var(--font-heading); margin-bottom: 10px;">No videos uploaded yet!</h3>
+                    <p>Upload some special video messages for Nonie using the <a href="upload.html" style="color: var(--rose-gold);">upload page</a>.</p>
+                </div>
+            </div>
+        `;
+    }
+
+    refreshAllGalleries() {
+        this.refreshImageGallery();
+        this.refreshVideoGallery();
+    }
+
+    refreshImageGallery() {
         // Clear existing gallery
-        const container = document.getElementById('gallery-container');
+        const container = document.getElementById('image-gallery-container');
         container.innerHTML = '';
 
         // Recreate gallery with new data
-        this.createGalleryHTML();
+        this.createImageGalleryHTML();
 
         // Reset current slide
-        this.currentSlide = 0;
+        this.imageSlider.currentSlide = 0;
 
         // Restart autoplay if we have content
-        if (this.autoplayTimer) {
-            clearInterval(this.autoplayTimer);
+        if (this.imageSlider.autoplayTimer) {
+            clearInterval(this.imageSlider.autoplayTimer);
         }
-        this.startAutoplay();
+        this.startImageAutoplay();
+    }
+
+    refreshVideoGallery() {
+        // Clear existing gallery
+        const container = document.getElementById('video-gallery-container');
+        container.innerHTML = '';
+
+        // Recreate gallery with new data
+        this.createVideoGalleryHTML();
+
+        // Reset current slide
+        this.videoSlider.currentSlide = 0;
+
+        // Restart autoplay if we have content
+        if (this.videoSlider.autoplayTimer) {
+            clearInterval(this.videoSlider.autoplayTimer);
+        }
+        this.startVideoAutoplay();
     }
 
     // Particle Animation System
@@ -176,99 +264,172 @@ class BirthdayWebsite {
 
     // Gallery System
     initGallery() {
-        this.createGalleryHTML();
-        this.setupGalleryControls();
+        this.createImageGalleryHTML();
+        this.createVideoGalleryHTML();
+        this.setupImageGalleryControls();
+        this.setupVideoGalleryControls();
         this.setupHoverEffects();
     }
 
-    createGalleryHTML() {
-        const container = document.getElementById('gallery-container');
+    createImageGalleryHTML() {
+        const container = document.getElementById('image-gallery-container');
 
-        if (this.galleryData.length === 0) {
-            this.showEmptyGalleryMessage();
+        if (this.imageSlider.data.length === 0) {
+            this.showEmptyImageGallery();
             return;
         }
 
-        // Create slides
-        this.galleryData.forEach((item, index) => {
+        // Create slides for images
+        this.imageSlider.data.forEach((item, index) => {
             const slide = document.createElement('div');
             slide.className = `slide ${index === 0 ? 'active' : ''}`;
 
-            // Handle both images and videos
-            let mediaElement;
-            if (item.type === 'video') {
-                mediaElement = document.createElement('video');
-                // Use cloudinaryUrl from Firestore if available
-                mediaElement.src = item.cloudinaryUrl || this.getCloudinaryUrl(item.imageId, 'video');
-                mediaElement.controls = true;
-                mediaElement.muted = true;
-                mediaElement.loop = true;
-                mediaElement.setAttribute('playsinline', '');
-            } else {
-                mediaElement = document.createElement('img');
-                // Use cloudinaryUrl from Firestore if available
-                mediaElement.src = item.cloudinaryUrl || this.getCloudinaryUrl(item.imageId);
-                mediaElement.loading = 'lazy';
-            }
-
-            mediaElement.alt = item.caption;
+            const img = document.createElement('img');
+            img.src = item.cloudinaryUrl || this.getCloudinaryUrl(item.imageId);
+            img.alt = item.caption;
+            img.loading = 'lazy';
 
             const caption = document.createElement('div');
             caption.className = 'slide-caption';
             caption.innerHTML = `<p>${item.caption}</p>`;
 
-            slide.appendChild(mediaElement);
+            slide.appendChild(img);
             slide.appendChild(caption);
             container.appendChild(slide);
         });
 
-        // Create navigation arrows
+        // Create navigation arrows for images
+        this.createNavigationControls(container, 'image');
+
+        // Create dot indicators for images
+        this.createDotIndicators(container, this.imageSlider.data.length, 'image');
+    }
+
+    createVideoGalleryHTML() {
+        const container = document.getElementById('video-gallery-container');
+
+        if (this.videoSlider.data.length === 0) {
+            this.showEmptyVideoGallery();
+            return;
+        }
+
+        // Create slides for videos
+        this.videoSlider.data.forEach((item, index) => {
+            const slide = document.createElement('div');
+            slide.className = `slide ${index === 0 ? 'active' : ''}`;
+
+            const video = document.createElement('video');
+            video.src = item.cloudinaryUrl || this.getCloudinaryUrl(item.imageId, 'video');
+            video.controls = true;
+            video.muted = true;
+            video.loop = true;
+            video.setAttribute('playsinline', '');
+            video.setAttribute('preload', 'metadata');
+
+            const caption = document.createElement('div');
+            caption.className = 'slide-caption';
+            caption.innerHTML = `<p>${item.caption}</p>`;
+
+            slide.appendChild(video);
+            slide.appendChild(caption);
+            container.appendChild(slide);
+        });
+
+        // Create navigation arrows for videos
+        this.createNavigationControls(container, 'video');
+
+        // Create dot indicators for videos
+        this.createDotIndicators(container, this.videoSlider.data.length, 'video');
+    }
+
+    createNavigationControls(container, type) {
         const prevBtn = document.createElement('button');
-        prevBtn.className = 'nav-arrow prev';
+        prevBtn.className = `nav-arrow prev nav-arrow-${type}`;
         prevBtn.innerHTML = '❮';
-        prevBtn.setAttribute('aria-label', 'Previous image');
+        prevBtn.setAttribute('aria-label', `Previous ${type}`);
 
         const nextBtn = document.createElement('button');
-        nextBtn.className = 'nav-arrow next';
+        nextBtn.className = `nav-arrow next nav-arrow-${type}`;
         nextBtn.innerHTML = '❯';
-        nextBtn.setAttribute('aria-label', 'Next image');
+        nextBtn.setAttribute('aria-label', `Next ${type}`);
 
         container.appendChild(prevBtn);
         container.appendChild(nextBtn);
-
-        // Create dot indicators (only if we have content)
-        if (this.galleryData.length > 0) {
-            const dotsContainer = document.createElement('div');
-            dotsContainer.className = 'dots-container';
-
-            this.galleryData.forEach((_, index) => {
-                const dot = document.createElement('button');
-                dot.className = `dot ${index === 0 ? 'active' : ''}`;
-                dot.setAttribute('aria-label', `Go to slide ${index + 1}`);
-                dot.addEventListener('click', () => this.goToSlide(index));
-                dotsContainer.appendChild(dot);
-            });
-
-            container.appendChild(dotsContainer);
-        }
     }
 
-    setupGalleryControls() {
-        const prevBtn = document.querySelector('.nav-arrow.prev');
-        const nextBtn = document.querySelector('.nav-arrow.next');
+    createDotIndicators(container, itemCount, type) {
+        if (itemCount <= 1) return; // Don't show dots for single items
 
-        prevBtn.addEventListener('click', () => this.previousSlide());
-        nextBtn.addEventListener('click', () => this.nextSlide());
+        const dotsContainer = document.createElement('div');
+        dotsContainer.className = `dots-container dots-container-${type}`;
 
-        // Keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') this.previousSlide();
-            if (e.key === 'ArrowRight') this.nextSlide();
+        for (let i = 0; i < itemCount; i++) {
+            const dot = document.createElement('button');
+            dot.className = `dot dot-${type} ${i === 0 ? 'active' : ''}`;
+            dot.setAttribute('aria-label', `Go to ${type} ${i + 1}`);
+            dot.dataset.index = i;
+            dotsContainer.appendChild(dot);
+        }
+
+        container.appendChild(dotsContainer);
+    }
+
+    setupImageGalleryControls() {
+        const prevBtn = document.querySelector('.nav-arrow-image.prev');
+        const nextBtn = document.querySelector('.nav-arrow-image.next');
+
+        if (prevBtn && nextBtn) {
+            prevBtn.addEventListener('click', () => this.previousImageSlide());
+            nextBtn.addEventListener('click', () => this.nextImageSlide());
+        }
+
+        // Image dot navigation
+        const imageDots = document.querySelectorAll('.dot-image');
+        imageDots.forEach((dot, index) => {
+            dot.addEventListener('click', () => this.goToImageSlide(index));
+        });
+    }
+
+    setupVideoGalleryControls() {
+        const prevBtn = document.querySelector('.nav-arrow-video.prev');
+        const nextBtn = document.querySelector('.nav-arrow-video.next');
+
+        if (prevBtn && nextBtn) {
+            prevBtn.addEventListener('click', () => this.previousVideoSlide());
+            nextBtn.addEventListener('click', () => this.nextVideoSlide());
+        }
+
+        // Video dot navigation
+        const videoDots = document.querySelectorAll('.dot-video');
+        videoDots.forEach((dot, index) => {
+            dot.addEventListener('click', () => this.goToVideoSlide(index));
         });
 
-        // Touch/swipe support
+        // Keyboard navigation for both sliders
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                if (this.imageSlider.data.length > 0) this.previousImageSlide();
+                if (this.videoSlider.data.length > 0) this.previousVideoSlide();
+            }
+            if (e.key === 'ArrowRight') {
+                if (this.imageSlider.data.length > 0) this.nextImageSlide();
+                if (this.videoSlider.data.length > 0) this.nextVideoSlide();
+            }
+        });
+
+        // Touch/swipe support for both galleries
+        this.setupTouchSupport();
+    }
+
+    setupTouchSupport() {
+        this.setupTouchForGallery('image-gallery-container', 'image');
+        this.setupTouchForGallery('video-gallery-container', 'video');
+    }
+
+    setupTouchForGallery(containerId, type) {
         let touchStartX = 0;
-        const gallery = document.getElementById('gallery-container');
+        const gallery = document.getElementById(containerId);
+        if (!gallery) return;
 
         gallery.addEventListener('touchstart', (e) => {
             touchStartX = e.touches[0].clientX;
@@ -280,24 +441,38 @@ class BirthdayWebsite {
 
             if (Math.abs(difference) > 50) {
                 if (difference > 0) {
-                    this.nextSlide();
+                    type === 'image' ? this.nextImageSlide() : this.nextVideoSlide();
                 } else {
-                    this.previousSlide();
+                    type === 'image' ? this.previousImageSlide() : this.previousVideoSlide();
                 }
             }
         });
     }
 
     setupHoverEffects() {
-        const gallery = document.getElementById('gallery-container');
+        // Image gallery hover effects
+        const imageGallery = document.getElementById('image-gallery-container');
+        if (imageGallery) {
+            imageGallery.addEventListener('mouseenter', () => {
+                this.imageSlider.isAutoplayPaused = true;
+            });
 
-        gallery.addEventListener('mouseenter', () => {
-            this.pauseAutoplay();
-        });
+            imageGallery.addEventListener('mouseleave', () => {
+                this.imageSlider.isAutoplayPaused = false;
+            });
+        }
 
-        gallery.addEventListener('mouseleave', () => {
-            this.resumeAutoplay();
-        });
+        // Video gallery hover effects
+        const videoGallery = document.getElementById('video-gallery-container');
+        if (videoGallery) {
+            videoGallery.addEventListener('mouseenter', () => {
+                this.videoSlider.isAutoplayPaused = true;
+            });
+
+            videoGallery.addEventListener('mouseleave', () => {
+                this.videoSlider.isAutoplayPaused = false;
+            });
+        }
     }
 
     getCloudinaryUrl(imageId, resourceType = 'image') {
@@ -309,57 +484,117 @@ class BirthdayWebsite {
         }
     }
 
-    goToSlide(index) {
-        const slides = document.querySelectorAll('.slide');
-        const dots = document.querySelectorAll('.dot');
+    // Image slider methods
+    goToImageSlide(index) {
+        const slides = document.querySelectorAll('#image-gallery-container .slide');
+        const dots = document.querySelectorAll('.dot-image');
+
+        if (slides.length === 0) return;
 
         // Remove active class from current slide and dot
-        slides[this.currentSlide].classList.remove('active');
-        dots[this.currentSlide].classList.remove('active');
+        if (slides[this.imageSlider.currentSlide]) {
+            slides[this.imageSlider.currentSlide].classList.remove('active');
+        }
+        if (dots[this.imageSlider.currentSlide]) {
+            dots[this.imageSlider.currentSlide].classList.remove('active');
+        }
 
         // Update current slide index
-        this.currentSlide = index;
+        this.imageSlider.currentSlide = index;
 
         // Add active class to new slide and dot
-        slides[this.currentSlide].classList.add('active');
-        dots[this.currentSlide].classList.add('active');
+        if (slides[this.imageSlider.currentSlide]) {
+            slides[this.imageSlider.currentSlide].classList.add('active');
+        }
+        if (dots[this.imageSlider.currentSlide]) {
+            dots[this.imageSlider.currentSlide].classList.add('active');
+        }
 
         // Restart Ken Burns animation
-        const activeImg = slides[this.currentSlide].querySelector('img');
-        activeImg.style.animation = 'none';
-        setTimeout(() => {
-            activeImg.style.animation = 'kenBurns 6s ease-in-out infinite alternate';
-        }, 10);
+        const activeImg = slides[this.imageSlider.currentSlide]?.querySelector('img');
+        if (activeImg) {
+            activeImg.style.animation = 'none';
+            setTimeout(() => {
+                activeImg.style.animation = 'kenBurns 6s ease-in-out infinite alternate';
+            }, 10);
+        }
     }
 
-    nextSlide() {
-        if (this.galleryData.length === 0) return;
-        const nextIndex = (this.currentSlide + 1) % this.galleryData.length;
-        this.goToSlide(nextIndex);
+    nextImageSlide() {
+        if (this.imageSlider.data.length === 0) return;
+        const nextIndex = (this.imageSlider.currentSlide + 1) % this.imageSlider.data.length;
+        this.goToImageSlide(nextIndex);
     }
 
-    previousSlide() {
-        if (this.galleryData.length === 0) return;
-        const prevIndex = (this.currentSlide - 1 + this.galleryData.length) % this.galleryData.length;
-        this.goToSlide(prevIndex);
+    previousImageSlide() {
+        if (this.imageSlider.data.length === 0) return;
+        const prevIndex = (this.imageSlider.currentSlide - 1 + this.imageSlider.data.length) % this.imageSlider.data.length;
+        this.goToImageSlide(prevIndex);
     }
 
+    // Video slider methods
+    goToVideoSlide(index) {
+        const slides = document.querySelectorAll('#video-gallery-container .slide');
+        const dots = document.querySelectorAll('.dot-video');
+
+        if (slides.length === 0) return;
+
+        // Remove active class from current slide and dot
+        if (slides[this.videoSlider.currentSlide]) {
+            slides[this.videoSlider.currentSlide].classList.remove('active');
+        }
+        if (dots[this.videoSlider.currentSlide]) {
+            dots[this.videoSlider.currentSlide].classList.remove('active');
+        }
+
+        // Update current slide index
+        this.videoSlider.currentSlide = index;
+
+        // Add active class to new slide and dot
+        if (slides[this.videoSlider.currentSlide]) {
+            slides[this.videoSlider.currentSlide].classList.add('active');
+        }
+        if (dots[this.videoSlider.currentSlide]) {
+            dots[this.videoSlider.currentSlide].classList.add('active');
+        }
+    }
+
+    nextVideoSlide() {
+        if (this.videoSlider.data.length === 0) return;
+        const nextIndex = (this.videoSlider.currentSlide + 1) % this.videoSlider.data.length;
+        this.goToVideoSlide(nextIndex);
+    }
+
+    previousVideoSlide() {
+        if (this.videoSlider.data.length === 0) return;
+        const prevIndex = (this.videoSlider.currentSlide - 1 + this.videoSlider.data.length) % this.videoSlider.data.length;
+        this.goToVideoSlide(prevIndex);
+    }
+
+    // Autoplay methods
     startAutoplay() {
-        if (this.galleryData.length <= 1) return; // Don't autoplay if only one slide or empty
+        this.startImageAutoplay();
+        this.startVideoAutoplay();
+    }
 
-        this.autoplayTimer = setInterval(() => {
-            if (!this.isAutoplayPaused) {
-                this.nextSlide();
+    startImageAutoplay() {
+        if (this.imageSlider.data.length <= 1) return;
+
+        this.imageSlider.autoplayTimer = setInterval(() => {
+            if (!this.imageSlider.isAutoplayPaused) {
+                this.nextImageSlide();
             }
         }, 6000);
     }
 
-    pauseAutoplay() {
-        this.isAutoplayPaused = true;
-    }
+    startVideoAutoplay() {
+        if (this.videoSlider.data.length <= 1) return;
 
-    resumeAutoplay() {
-        this.isAutoplayPaused = false;
+        this.videoSlider.autoplayTimer = setInterval(() => {
+            if (!this.videoSlider.isAutoplayPaused) {
+                this.nextVideoSlide();
+            }
+        }, 8000); // Slightly longer for videos
     }
 
     // Scroll Animations
