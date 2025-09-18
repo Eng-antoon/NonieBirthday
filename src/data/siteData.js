@@ -15,43 +15,25 @@ export const siteData = {
     }
   },
 
-  // PhotoGallery collection
+  // PhotoGallery collection - Replace these with your actual photo IDs from Cloudinary
   photos: [
     {
-      id: "birthday-photo-1",
+      id: "sample/people",
       caption: "Our first adventure together - the beginning of something beautiful",
       order: 1,
       altText: "Tony and Marnona smiling together outdoors on their first date"
     },
     {
-      id: "birthday-photo-2",
+      id: "sample/landscapes",
       caption: "That perfect sunset moment when everything felt right",
       order: 2,
       altText: "Couple watching sunset by the water, silhouetted against golden sky"
     },
     {
-      id: "birthday-photo-3",
+      id: "sample/food",
       caption: "Dancing in the kitchen like nobody's watching",
       order: 3,
       altText: "Tony and Marnona dancing together in the kitchen, laughing"
-    },
-    {
-      id: "birthday-photo-4",
-      caption: "Your smile lights up every room you enter",
-      order: 4,
-      altText: "Close-up of Marnona smiling brightly at camera"
-    },
-    {
-      id: "birthday-photo-5",
-      caption: "Making memories wherever we go",
-      order: 5,
-      altText: "Couple taking a selfie during a trip, both making funny faces"
-    },
-    {
-      id: "birthday-photo-6",
-      caption: "Quiet moments are just as precious as the big ones",
-      order: 6,
-      altText: "Tony and Marnona cuddling on couch watching a movie"
     }
   ],
 

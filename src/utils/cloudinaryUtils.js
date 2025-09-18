@@ -3,8 +3,8 @@
  * Generates optimized Cloudinary image URLs with transformations
  */
 
-// Get cloud name from environment or use default
-const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'birthday-photos';
+// Get cloud name from environment or use your cloud
+const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dsgrl4zf8';
 const BASE_URL = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload`;
 
 /**

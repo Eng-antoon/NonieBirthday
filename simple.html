@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday Nonie! 🎉</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Georgia, serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #FFF8E1 0%, #fff 100%);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #F8BBD9 0%, #E8B4CB 100%);
+            color: white;
+            border-radius: 15px;
+            margin-bottom: 40px;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .gallery {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+        }
+
+        .gallery h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #F8BBD9;
+            font-size: 2rem;
+        }
+
+        .photo {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            display: block;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .caption {
+            text-align: center;
+            font-style: italic;
+            margin: 15px 0 30px 0;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .message-card {
+            background: #FFF8E1;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .message-card p {
+            font-size: 1.2rem;
+            color: #333;
+            margin: 0;
+        }
+
+        .upload-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .upload-link:hover {
+            background: #218838;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            .hero p {
+                font-size: 1rem;
+            }
+            .container {
+                padding: 10px;
+            }
+            .gallery {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="upload.html" class="upload-link">📸 Upload Photos</a>
+
+    <div class="container">
+        <div class="hero">
+            <h1>Happy Birthday, <span id="name">Marnona</span>! 🎉</h1>
+            <p id="message">Welcome to a celebration of you, beautiful. Every moment we've shared has been a gift, and today we celebrate the amazing person you are.</p>
+        </div>
+
+        <div class="gallery">
+            <h2>Beautiful Memories 📸</h2>
+            <div id="photos">
+                <!-- Photos will be loaded here -->
+            </div>
+        </div>
+
+        <div class="message-card">
+            <p>💕 You are the light that brightens every single day. Your laugh is my favorite sound, and your smile is my favorite sight.</p>
+        </div>
+
+        <div class="message-card" style="background: #F8BBD9; color: white;">
+            <p>✨ Every moment with you is a treasure I hold close to my heart. You make the ordinary feel extraordinary.</p>
+        </div>
+
+        <div class="message-card">
+            <p>🌸 Your kindness touches everyone around you. You have this incredible way of making people feel seen and valued.</p>
+        </div>
+
+        <div class="message-card" style="background: #E8B4CB; color: white;">
+            <p>🎉 Today we celebrate you, but honestly, I celebrate you every single day. Happy Birthday, my amazing Marnona! 💕</p>
+        </div>
+    </div>
+
+    <script>
+        // Simple photo loading with your Cloudinary cloud
+        const photos = [
+            {
+                url: "https://res.cloudinary.com/dsgrl4zf8/image/upload/w_600,q_auto/sample/people",
+                caption: "Our first adventure together - the beginning of something beautiful"
+            },
+            {
+                url: "https://res.cloudinary.com/dsgrl4zf8/image/upload/w_600,q_auto/sample/landscapes",
+                caption: "That perfect sunset moment when everything felt right"
+            },
+            {
+                url: "https://res.cloudinary.com/dsgrl4zf8/image/upload/w_600,q_auto/sample/food",
+                caption: "Dancing in the kitchen like nobody's watching"
+            }
+        ];
+
+        // Load photos
+        const photosContainer = document.getElementById('photos');
+        photos.forEach(photo => {
+            const img = document.createElement('img');
+            img.src = photo.url;
+            img.alt = photo.caption;
+            img.className = 'photo';
+
+            const caption = document.createElement('div');
+            caption.className = 'caption';
+            caption.textContent = photo.caption;
+
+            photosContainer.appendChild(img);
+            photosContainer.appendChild(caption);
+        });
+
+        // Simple error handling for images
+        document.querySelectorAll('img').forEach(img => {
+            img.onerror = function() {
+                this.style.display = 'none';
+                const fallback = document.createElement('div');
+                fallback.style.cssText = 'width: 100%; height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #666; border-radius: 10px; margin: 20px auto;';
+                fallback.textContent = '📷 Photo will be available soon';
+                this.parentNode.insertBefore(fallback, this.nextSibling);
+            };
+        });
+    </script>
+</body>
+</html>

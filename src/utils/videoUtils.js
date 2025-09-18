@@ -171,9 +171,8 @@ export function generateVideoPoster(thumbnailId) {
     return null;
   }
 
-  // Return placeholder URL for now - will be replaced when cloudinaryUtils is imported
-  // This prevents circular dependency issues in tests
-  const CLOUD_NAME = 'birthday-photos';
+  // Return thumbnail URL using your Cloudinary cloud
+  const CLOUD_NAME = 'dsgrl4zf8';
   return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_1200,h_675,c_fill,q_auto:good,f_jpg/${thumbnailId}`;
 }
 

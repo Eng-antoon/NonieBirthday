@@ -2,13 +2,14 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   root: '.',
-  base: './',
+  base: '/NonieBirthday/',
   build: {
     outDir: 'dist',
     target: 'es2015',
     rollupOptions: {
       input: {
-        main: './index.html'
+        main: './index.html',
+        upload: './upload.html'
       }
     }
   },
